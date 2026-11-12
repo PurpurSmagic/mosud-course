@@ -13,7 +13,7 @@
 & 'C:\Program Files\PostgreSQL\17\bin\psql.exe' -X -h 127.0.0.1 -p 55432 -U postgres -d olist -v ON_ERROR_STOP=1 -f lab02/lab02.sql
 ```
 
-[Запросы и фактический вывод](results.md) доступны для просмотра прямо на GitHub.
+Запросы и вывод `psql` появляются в блоке `lab02/lab02.sql` на странице **Summary** после автоматического запуска. [Автоматический вывод в GitHub Actions](https://github.com/PurpurSmagic/mosud-course/actions/workflows/sql-results.yml)
 
 ## Мощности
 

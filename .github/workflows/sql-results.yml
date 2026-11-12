@@ -1,0 +1,82 @@
+name: Результаты SQL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lab[0-9][0-9]/*.sql'
+      - '.github/workflows/sql-results.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sql-results:
+    name: Запросы PostgreSQL и их вывод
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: olist
+          POSTGRES_PASSWORD: olist-ci
+          POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres -d olist"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGUSER: postgres
+      PGDATABASE: olist
+      PGPASSWORD: olist-ci
+      PGCLIENTENCODING: UTF8
+    steps:
+      - name: Получить код коммита
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Скачать исходные CSV Olist
+        run: |
+          mkdir -p data/olist
+          curl --fail --silent --show-error --location --retry 3 --connect-timeout 15 --max-time 120 \
+            --output "$RUNNER_TEMP/olist.zip" \
+            'https://www.kaggle.com/api/v1/datasets/download/olistbr/brazilian-ecommerce'
+          unzip -q "$RUNNER_TEMP/olist.zip" -d data/olist
+
+      - name: Создать схему и загрузить данные
+        env:
+          PGPORT: ${{ job.services.postgres.ports['5432'] }}
+        run: psql -X --no-password --set=ON_ERROR_STOP=1 --file=lab01/schema.sql
+
+      - name: Выполнить практики и показать вывод psql
+        env:
+          PGPORT: ${{ job.services.postgres.ports['5432'] }}
+        run: |
+          printf '# Запросы и вывод PostgreSQL\n\nКоммит `%s`\n\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          report=$(mktemp)
+          trap 'rm -f -- "$report"' EXIT
+
+          for sql_file in lab01/check.sql lab[0-9][0-9]/lab[0-9][0-9].sql; do
+            [[ -f "$sql_file" ]] || continue
+            printf '::group::%s\n' "$sql_file"
+            psql -X --no-password --set=ON_ERROR_STOP=1 --pset=pager=off \
+              --echo-all --file="$sql_file" | tee "$report"
+            printf '%s\n' '::endgroup::'
+
+            {
+              printf '## `%s`\n\n' "$sql_file"
+              printf '%s\n' '~~~~text'
+              cat "$report"
+              printf '%s\n\n' '~~~~'
+            } >> "$GITHUB_STEP_SUMMARY"
+          done

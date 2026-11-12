@@ -3,6 +3,10 @@
 - [Практика № 1 — развёртывание PostgreSQL и загрузка Olist](lab01/README.md)
 - [Практика № 2 — множества и мультимножества в SQL](lab02/README.md)
 
+## Автоматическое выполнение практик
+
+При изменении SQL в ветке `main` GitHub Actions создаёт временную базу PostgreSQL, загружает CSV Olist и выполняет `lab01/check.sql` и скрипты вида `lab02/lab02.sql`. Во вкладке **Summary** последнего запуска показаны запросы, таблицы из вывода `psql` и коммит, из которого взят код. Для повторного запуска доступна кнопка **Run workflow**. [Результаты SQL в GitHub Actions](https://github.com/PurpurSmagic/mosud-course/actions/workflows/sql-results.yml)
+
 ## Подключение к готовой базе
 
 В DBeaver создай подключение PostgreSQL со следующими параметрами.

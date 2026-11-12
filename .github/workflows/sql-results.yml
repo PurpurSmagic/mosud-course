@@ -45,18 +45,22 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Скачать исходные CSV Olist
-        run: |
-          mkdir -p data/olist
-          curl --fail --silent --show-error --location --retry 3 --connect-timeout 15 --max-time 120 \
-            --output "$RUNNER_TEMP/olist.zip" \
-            'https://www.kaggle.com/api/v1/datasets/download/olistbr/brazilian-ecommerce'
-          unzip -q "$RUNNER_TEMP/olist.zip" -d data/olist
+      - name: Получить CSV Olist из резервного источника
+        uses: actions/checkout@v6
+        with:
+          repository: xqtee-eng/Brazilian-E-Commerce-Public-Dataset-by-Olist
+          ref: 2c2c68156bd6563b3e93583602014807e767a7f3
+          path: .olist-source
+          sparse-checkout: archive
+          persist-credentials: false
 
       - name: Создать схему и загрузить данные
         env:
           PGPORT: ${{ job.services.postgres.ports['5432'] }}
-        run: psql -X --no-password --set=ON_ERROR_STOP=1 --file=lab01/schema.sql
+        run: |
+          mkdir -p data/olist
+          cp -- .olist-source/archive/*.csv data/olist/
+          psql -X --no-password --set=ON_ERROR_STOP=1 --file=lab01/schema.sql
 
       - name: Выполнить практики и показать вывод psql
         env:

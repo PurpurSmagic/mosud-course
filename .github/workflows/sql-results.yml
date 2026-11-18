@@ -29,6 +29,7 @@ jobs:
         ports:
           - 5432/tcp
         options: >-
+          --shm-size=512m
           --health-cmd "pg_isready -h 127.0.0.1 -U postgres -d olist"
           --health-interval 5s
           --health-timeout 5s
